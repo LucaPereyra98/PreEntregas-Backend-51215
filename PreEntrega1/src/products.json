@@ -1,1 +1,1 @@
-[{"id":1,"title":"Manzana","description":"Fruta roja","code":"manzana1","price":300,"status":true,"stock":200,"category":"fruta","thumbnails":[]}]
+[{"id":1,"title":"Manzana","description":"Fruta verde","code":"manzana2","price":100,"status":true,"stock":1000,"category":"fruta","thumbnails":[]},{"id":2,"title":"Manzana roja","description":"Fruta roja","code":"manzana1","price":120,"status":true,"stock":1000,"category":"fruta","thumbnails":[]}]
