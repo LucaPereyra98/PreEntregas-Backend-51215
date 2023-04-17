@@ -79,13 +79,26 @@ router.post('/', (req, res) => {
 
 // Actualizar productos
 router.put('/:pid', (req, res) => {
-    // Recibir el ID del producto a modificar
-    const 
+    // Buscar el producto con el ID solicitado
+    const product = products.find(p => p.id === parseInt(req.params.pid));
+    if (!product) {
+    // Si no se encuentra, enviar mensaje de error
+        return res.status(404).send('Product not found');
+    }
+    // Actualizar los valores del producto. En caso de no modificar todo, solamente enviar la propiedad actualizada
+    product.title = req.body.title || product.title;
+    product.description = req.body.description || product.description;
+    product.code = req.body.code || product.code;
+    product.price = req.body.price || product.price;
+    product.status = req.body.status || product.status;
+    product.stock = req.body.stock || product.stock;
+    product.category = req.body.category || product.category;
+    product.thumbnails = req.body.thumbnails || product.thumbnails;
+    
+    // Enviar producto actualizado como respuesta
+    res.send(product);
 
-    // Modificar valor de un objeto 
-    res.status(200).send({ status: " success", message: "product successfully updated"})
-
-    // Enviar modificacion al archivo JSON
+    // Actualizar archivo JSON
     const productsJSON = JSON.stringify(products)
     fs.writeFile('products.json', productsJSON, (err) => {
         if (err) {
@@ -94,7 +107,7 @@ router.put('/:pid', (req, res) => {
             return res.status(200).send(products)
         }
     })
-})
+});
 
 
 export default router
