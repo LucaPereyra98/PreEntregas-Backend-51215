@@ -94,9 +94,6 @@ router.put('/:pid', (req, res) => {
     product.stock = req.body.stock || product.stock;
     product.category = req.body.category || product.category;
     product.thumbnails = req.body.thumbnails || product.thumbnails;
-    
-    // Enviar producto actualizado como respuesta
-    res.send(product);
 
     // Actualizar archivo JSON
     const productsJSON = JSON.stringify(products)
@@ -104,7 +101,7 @@ router.put('/:pid', (req, res) => {
         if (err) {
             return res.status(500).send({ error: `error writing file ${err}`})
         } else {
-            return res.status(200).send(products)
+            return res.status(200).json({ status: "success", message: "Product upgraded" })
         }
     })
 });
@@ -118,8 +115,7 @@ router.delete('/:pid', (req, res) => {
     }
     
     // Modificar el array para eliminar el producto
-    products = products.filter(product => product.id != id);
-    res.status(200).send({ status: "success", message: "Product deleted" });
+    products = products.filter(product => product.id != parseInt(req.params.pid));
 
     // Actualizar archivo JSON
     const productsJSON = JSON.stringify(products)
@@ -127,7 +123,7 @@ router.delete('/:pid', (req, res) => {
         if (err) {
             return res.status(500).send({ error: `error writing file ${err}`})
         } else {
-            return res.status(200).send(products)
+            return res.status(200).send({ status: "success", message: "Product deleted" })
         }
     })
 })
