@@ -2,7 +2,7 @@ import { Router } from "express"
 import fs from 'fs'
 
 const router = Router()
-const products = []
+let products = []
 
 // Exportar productos a JSON
 const exportProductsToJSON = (fileName) => {
@@ -109,5 +109,27 @@ router.put('/:pid', (req, res) => {
     })
 });
 
+router.delete('/:pid', (req, res) => {
+     // Buscar el producto con el ID solicitado
+    const product = products.find(p => p.id === parseInt(req.params.pid));
+    if (!product) {
+    // Si no se encuentra, enviar mensaje de error
+        return res.status(404).send('Product not found');
+    }
+    
+    // Modificar el array para eliminar el producto
+    products = products.filter(product => product.id != id);
+    res.status(200).send({ status: "success", message: "Product deleted" });
+
+    // Actualizar archivo JSON
+    const productsJSON = JSON.stringify(products)
+    fs.writeFile('products.json', productsJSON, (err) => {
+        if (err) {
+            return res.status(500).send({ error: `error writing file ${err}`})
+        } else {
+            return res.status(200).send(products)
+        }
+    })
+})
 
 export default router
