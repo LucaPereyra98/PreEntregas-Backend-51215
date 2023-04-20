@@ -3,7 +3,12 @@ const fs = require("fs")
 const products = require('../products.json')
 
 const router = Router()
-const carts = []
+let carts = []
+try {
+    carts = JSON.parse(fs.readFileSync("carts.json"))
+} catch (err) {
+    console.log("error loading files in the cart", err)
+}
 
 // Exportar productos a JSON
 const exportCartsToJSON = (fileName) => {
@@ -49,7 +54,6 @@ router.get ("/:cid", (req, res) => {
     res.send(cart.products)
 }) 
 
-
 router.post('/:cid/product/:pid', function(req, res) {
     // Obtener el id del carrito y del producto de los parámetros de la solicitud
     const cartId = req.params.cid
@@ -58,14 +62,14 @@ router.post('/:cid/product/:pid', function(req, res) {
     const cart = carts.find(c => c.id === parseInt(cartId))
     // Si el carrito no existe, responder con un mensaje de error
     if (!cart) {
-        res.status(404).send('No se encontró el carrito');
+        res.status(404).send('Cart not found');
         return
     }
     // Buscar el producto correspondiente en el arreglo de productos
     const productIndex = products.findIndex(p => p.id === parseInt(productId))
     if (productIndex === -1) {
         // Si el producto no existe, responder con un mensaje de error
-        res.status(404).send('Producto no encontrado')
+        res.status(404).send('Product not found')
         return
     }
     products[productIndex].quantity--
@@ -88,9 +92,5 @@ router.post('/:cid/product/:pid', function(req, res) {
     })
     exportCartsToJSON('carts.json')
 });
-
-
-
-
 
 module.exports = router
