@@ -1,5 +1,6 @@
-import { Router } from "express";
-import fs from "fs"
+const { Router } = require("express")
+const fs = require("fs")
+const products = require('../products.json')
 
 const router = Router()
 const carts = []
@@ -48,33 +49,48 @@ router.get ("/:cid", (req, res) => {
     res.send(cart.products)
 }) 
 
-// Agregar productos al carrito de compras
-router.post('/:cid/product/:pid', (req, res) => {
-    const { cid, pid } = req.params
-    const { quantity } = req.body
 
-    // Buscar si el producto ya existe en el carrito
-    const existingProduct = carts[cid].products.find(p => p.product === pid)
-    if (existingProduct) {
-        // Si el producto existe, sumarle la cantidad nueva 
-        existingProduct.quantity += quantity
-    } else {
-        // Si no existe, agregarlo al carrito
-        carts[cid].products.push({
-            product: pid,
-            quantity
-        })
+router.post('/:cid/product/:pid', function(req, res) {
+    // Obtener el id del carrito y del producto de los parámetros de la solicitud
+    const cartId = req.params.cid
+    const productId = req.params.pid
+    // Buscar el carrito correspondiente en el arreglo de carritos
+    const cart = carts.find(c => c.id === parseInt(cartId))
+    // Si el carrito no existe, responder con un mensaje de error
+    if (!cart) {
+        res.status(404).send('No se encontró el carrito');
+        return
     }
-
-    // Actualizar archivo JSON
-    const cartsJSON = JSON.stringify(carts)
-    fs.writeFile('carts.json', cartsJSON, (err) => {
+    // Buscar el producto correspondiente en el arreglo de productos
+    const productIndex = products.findIndex(p => p.id === parseInt(productId))
+    if (productIndex === -1) {
+        // Si el producto no existe, responder con un mensaje de error
+        res.status(404).send('Producto no encontrado')
+        return
+    }
+    products[productIndex].quantity--
+    // Buscar el producto correspondiente en el arreglo de productos del carrito
+    const existingProduct = cart.products.find(p => p.product === parseInt(productId))
+    if (existingProduct) {
+        // Si el producto ya existe en el carrito, incrementar la cantidad
+        existingProduct.quantity++
+    } else {
+        // Si el producto no existe en el carrito, agregarlo al arreglo de productos
+        cart.products.push({ product: parseInt(productId), quantity: 1 })
+    }
+    // Responder con el carrito actualizado
+    res.send(cart)
+    fs.writeFile('../products.json', JSON.stringify(products), function(err) {
         if (err) {
-            return res.status(500).send({ error: `error writing file ${err}`})
-        } else {
-            return res.status(200).json({ status: "success", message: "Cart upgraded" })
+            res.status(404).json(err)
         }
+        console.log('products.json has been updated')
     })
-})
+    exportCartsToJSON('carts.json')
+});
 
-export default router
+
+
+
+
+module.exports = router

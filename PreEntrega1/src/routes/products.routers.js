@@ -1,5 +1,5 @@
-import { Router } from "express"
-import fs from 'fs'
+const { Router } = require("express")
+const fs = require("fs")
 
 const router = Router()
 let products = []
@@ -128,4 +128,4 @@ router.delete('/:pid', (req, res) => {
     })
 })
 
-export default router
+module.exports = router
