@@ -2,7 +2,12 @@ import { Router } from "express";
 import fs from "fs"
 
 const router = Router()
-const carts = []
+let carts = []
+try {
+    carts = JSON.parse(fs.readFileSync("carts.json"))
+} catch (err) {
+    console.log("error loading files in the cart", err)
+}
 
 // Exportar productos a JSON
 const exportCartsToJSON = (fileName) => {
@@ -51,19 +56,12 @@ router.get ("/:cid", (req, res) => {
 // Agregar productos al carrito de compras
 router.post('/:cid/product/:pid', (req, res) => {
     const { cid, pid } = req.params
-    const { quantity } = req.body
-
-    // Buscar si el producto ya existe en el carrito
-    const existingProduct = carts[cid].products.find(p => p.product === pid)
-    if (existingProduct) {
-        // Si el producto existe, sumarle la cantidad nueva 
-        existingProduct.quantity += quantity
-    } else {
-        // Si no existe, agregarlo al carrito
-        carts[cid].products.push({
-            product: pid,
-            quantity
-        })
+    
+    // Verificar si existe el carrito
+    const cart = carts.find((cart) => cart.id === parseInt(cid))
+    if (!cart) {
+        // Si el carrito no existe, enviar error
+        res.status(404).json({ error: "Cart not found"})
     }
 
     // Actualizar archivo JSON
