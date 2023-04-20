@@ -62,7 +62,7 @@ router.post('/:cid/product/:pid', function(req, res) {
     const cart = carts.find(c => c.id === parseInt(cartId))
     // Si el carrito no existe, responder con un mensaje de error
     if (!cart) {
-        res.status(404).send('Cart not found');
+        res.status(404).send('Cart not found')
         return
     }
     // Buscar el producto correspondiente en el arreglo de productos
