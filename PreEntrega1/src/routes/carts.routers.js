@@ -1,96 +1,143 @@
-const { Router } = require("express")
-const fs = require("fs")
-const products = require('../products.json')
+const { Router } = require('express')
+const fs = require('fs')
+const path = require('path')
+const products= require('../data/products.json')
 
 const router = Router()
+// Array vacio inicial
 let carts = []
-try {
-    carts = JSON.parse(fs.readFileSync("carts.json"))
-} catch (err) {
-    console.log("error loading files in the cart", err)
-}
 
-// Exportar productos a JSON
-const exportCartsToJSON = (fileName) => {
+// Funcion para exportar los cambios de productos al archivo JSON de carritos
+const exportCartsJSON = (fileName) => {
     const cartsJSON = JSON.stringify(carts)
-    const filePath= 'carts.json'
-    fs.truncate(filePath, 0, () => {
-        fs.writeFile(filePath, cartsJSON, (err) => {
-            if (err) {
-                throw new Error (`error writing file ${err}`)
-            } else {
-                console.log(`Products have been successfully added to the file ${fileName}`)
-            }
-        })
+    const filePath = path.join(__dirname, '../data/carts.json')
+    fs.writeFile(filePath, cartsJSON, (err) => {
+        if (err) {
+            return res.status(500).send(err)
+        } else {
+            console.log(`The archive ${fileName} has been updated correctly.`)
+        }
     })
 }
 
-// Crear nuevo carrito
-router.post ('/', (req, res) => {
-    const newCart = {
-        id: carts.length + 1,
-        products: []
-    }
-    carts.push(newCart)
+// Funcion para exportar los cambios de productos al archivo JSON de productos
+const exportProductsJSON = (fileName) => {
+    const productsJSON = JSON.stringify(products)
+    const filePath = path.join(__dirname, '../data/products.json')
+    fs.writeFile(filePath, productsJSON, (err) => {
+        if (err) {
+            return res.status(500).send(err)
+        } else {
+            console.log(`The archive ${fileName} has been updated correctly.`)
+        }
+    })
+}
+
+// SOLICITUDES POSTMAN
+
+// Crear un carrito nuevo
+router.get('/', (req, res) => {
+    // Se crea un nuevo carrito vacio
+    const newCart = { id: carts.length + 1, products: [] }
+
+    // Se recibe un console.log para controlar que el carrito haya sido generado correctamente
     console.log(newCart)
-    res.send({status: "success", message: "new cart created"})
-    exportCartsToJSON('carts.json')
+
+    // Se pushea al array de carritos
+    carts.push(newCart)
+    
+    //Se envia mensaje de exito
+    res.send({ status: 'success', message: 'new cart created' })
+
+    // Se exporta el carrito al archivo JSON
+    exportCartsJSON('../data/carts.json')
 })
 
-// Buscar productos del carrito por ID
-router.get ("/:cid", (req, res) => {
-    // Recibir ID del carrito
-    const cartId = parseInt(req.params.cid)
+// Buscar los productos del carrito determinado por el ID
+router.get('/:cid', (req, res) => {
+    // Recibir el ID del carrito de la URL
+    const cartId = parseInt(req.params.cid) // Se pasa a numero usando "parseInt"
 
-    // Buscar el ID en el array
-    const cart = carts.find( cart => cart.id === cartId )
+    // Buscar el ID del carrito en el array de carritos
+    const cart = carts.find( cart => cart.id ===  cartId )
+
+    // Si el carrito no existe enviar error 404
     if (!cart) {
-        // Si no existe el producto, enviar el error
-        const error = {error: 'cart not found'}
+        const error = { error: 'cart not found' }
         return res.status(404).send(error)
     }
 
-    // Si existe el carrito, mostrar los productos dentro del array
-    res.send(cart.products)
-}) 
+    //Si existe el carrito mostrar los productos del array
+    res.send(cart.cartProducts)
+})
 
-router.post('/:cid/product/:pid', function(req, res) {
-    // Obtener el id del carrito y del producto de los parámetros de la solicitud
+// Añadir los productos del archivo JSON al carrito especificado por el ID de la URL
+router.post('/:cid/product/:pid', (req, res) => {
+    // Obtener el ID del carrito al cual se le van a sumar los productos
     const cartId = req.params.cid
+
+    // Obtener el ID de los productos que se van a sumar al carrito
     const productId = req.params.pid
-    // Buscar el carrito correspondiente en el arreglo de carritos
-    const cart = carts.find(c => c.id === parseInt(cartId))
-    // Si el carrito no existe, responder con un mensaje de error
+
+    // Buscar el carrito en el array de carritos
+    const cart = carts.find( cart => cart.id === parseInt(cartId) ) // Se pasa a numero usando "parseInt
+
+    // Si el carrito no existe, enviar mensaje de error
     if (!cart) {
-        res.status(404).send('Cart not found')
-        return
+        return res.status(404).send('Cart not found')
     }
-    // Buscar el producto correspondiente en el arreglo de productos
-    const productIndex = products.findIndex(p => p.id === parseInt(productId))
-    if (productIndex === -1) {
-        // Si el producto no existe, responder con un mensaje de error
-        res.status(404).send('Product not found')
-        return
+
+    // Buscar el producto en el array de productos disponibles dentro del archivo JSON
+    const productIndex = products.findIndex( p => p.id === parseInt(productId) )
+
+    // Si el producto no existe enviar un mensaje de error
+    if (productIndex === -1 ) {
+        return res.status(404).send('Product not found')
     }
-    products[productIndex].quantity--
-    // Buscar el producto correspondiente en el arreglo de productos del carrito
-    const existingProduct = cart.products.find(p => p.product === parseInt(productId))
+
+    // En caso de existir el producto, reducir la cantidad del producto en el array JSON en 1
+    products[productIndex].stock--
+
+    // Verificar si el producto ya existe en el carrito
+    const existingProduct = cart.products.find( p => p.product === parseInt(productId))
+
+    //Si el producto existe, incrementar en 1 su cantidad. Si no existe, enviarlo al carrito con cantidad fija de 1.
     if (existingProduct) {
-        // Si el producto ya existe en el carrito, incrementar la cantidad
         existingProduct.quantity++
     } else {
-        // Si el producto no existe en el carrito, agregarlo al arreglo de productos
-        cart.products.push({ product: parseInt(productId), quantity: 1 })
+        cart.products.push( { product: parseInt(productId), quantity: 1 } )
     }
-    // Responder con el carrito actualizado
+
+    // Enviar el carrito con los productos actualizados
     res.send(cart)
-    fs.writeFile('../products.json', JSON.stringify(products), function(err) {
-        if (err) {
-            res.status(404).json(err)
-        }
-        console.log('products.json has been updated')
-    })
-    exportCartsToJSON('carts.json')
-});
+
+    // Actualizar el array de carritos y productos
+    exportCartsJSON('../data/carts.json')
+    exportProductsJSON('../data/products.json')
+})
+
+// Borrar productos del carrito
+router.delete('/:cid/products', (req, res) => {
+    // Recibir ID del carrito
+    const cartId = req.params.cid
+
+    // Buscar el ID del carrito en el carray de carritos
+    let cart = carts.find( cart => cart.id ===  parseInt(cartId) )
+
+    // Si el carrito no existe enviar error 404
+    if (!cart) {
+        const error = { error: 'cart not found' }
+        console.log(cartId)
+        console.log(cart)
+        return res.status(404).send(error)
+    }
+
+    // Si existe el carrito, borrar los productos y solamente dejar un array vacio
+    cart.products = []
+
+    // Se exporta el carrito al archivo JSON
+    exportCartsJSON('../data/carts.json')
+    return res.send( { status: "Products successfully deleted" } )
+})
 
 module.exports = router
