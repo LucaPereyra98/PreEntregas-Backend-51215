@@ -36,7 +36,7 @@ const exportProductsJSON = (fileName) => {
 // SOLICITUDES POSTMAN
 
 // Crear un carrito nuevo
-router.get('/', (req, res) => {
+router.post('/', (req, res) => {
     // Se crea un nuevo carrito vacio
     const newCart = { id: carts.length + 1, products: [] }
 
