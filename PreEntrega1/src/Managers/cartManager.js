@@ -1,57 +1,53 @@
 const fs = require('fs')
-const ProductManager = require('./productManager')
+const path = require("path")
+const ProductsManager = require('./productsManager')
 
 class CartManager {
-
-    productsManager = new ProductManager()
-
-    constructor() {
-        this.path = __dirname + './data/carts.json'
+  productsManager = new ProductsManager()
+  constructor() {
+    this.path = path.join(__dirname, "./data/carts.json")
+  }
+  async getAllCarts() {
+    const cartsJson = await fs.promises.readFile(this.path, 'utf-8')
+    if (!cartsJson.trim()) {
+      return []
     }
-
-    // Mostrar todos los carritos
-    async getAllCarts() {
-        const cartsJSON = await fs.promises.readFile(this.path, 'utf-8')
-        if (!cartsJSON.trim()) {
-            return []
-        }
-        const cartsParse = JSON.parse(cartsJSON)
-        return cartsParse
+    const cartsParse = JSON.parse(cartsJson)
+    return cartsParse
+  }
+  async getCartById(id) {
+    const carts = await this.getAllCarts()
+    const cart = carts.find((cart) => cart.id === id)
+    if (!cart) return 'No se encontró ningún cart'
+    return cart
+  }
+  async createCart() {
+    const carts = await this.getAllCarts()
+    console.log(carts)
+    const newCart = {
+      id: Date.now(),
+      products: [],
     }
-
-    // Mostrar el carrito por Id
-    async getCartById() {
-        const carts = await this.getAllCarts()
-        console.log(carts)
-        const newCart = { id: Date.now(), products: [] }
-        carts.push(newCart)
-        await fs.promises.writeFile(this.path, JSON.stringify(carts))
-        return carts
-    }
-
-    // Agregar un producto al carrito
-    async addProductToCart(idCart, idProduct) {
-        const carts = await this.getAllCarts()
-        const product = await this.productsManager.getProductById(idProduct)
-        if (!product) {
-            return `Product searched with id ${id} was not found`
-        }
-        const cartIndex = carts.findIndex(cart => cart.id === idCart)
-        if (cartIndex === -1) {
-            return `Cart searched with id ${id} was not found`
-        }
-        carts[cartIndex].products.push(product)
-        await fs.promises.writeFile(this.path, JSON.stringify(carts))
-        return carts
-    }
-
-    // Borrar carrito segun Id
-    async deleteCart(id) {
-        const carts = await this.getAllCarts()
-        carts.filter( (cart) => cart.id !== id )
-        await fs.promises.writeFile(this.path, JSON.stringify(carts))
-        return carts
-    }
+    carts.push(newCart)
+    await fs.promises.writeFile(this.path, JSON.stringify(carts))
+    return carts
+  }
+  async addProductToCart(idCart, idProduct) {
+    const carts = await this.getAllCarts()
+    const product = await this.productsManager.getProductById(idProduct)
+    const cartIndex = carts.findIndex(cart => cart.id === idCart)
+    if (cartIndex === -1) return `No se encontró el cart buscado con el id ${id}`
+    carts[cartIndex].products.push(product)
+    await fs.promises.writeFile(this.path, JSON.stringify(carts))
+    return carts
+  }
+  async deleteCart(id) {
+    const carts = await this.getAllCarts()
+    const cart = carts.find((cart) => cart.id === id)
+    if (!cart) return `No se encontró el carrito buscado con el id ${id}`
+    carts.filter((cart) => cart.id !== id)
+    await fs.promises.writeFile(this.path, JSON.stringify(carts))
+    return carts
+  }
 }
-
 module.exports = CartManager
